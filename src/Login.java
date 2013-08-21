@@ -9,7 +9,10 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import com.etrade.etws.account.Account;
+import com.etrade.etws.account.AccountBalanceResponse;
 import com.etrade.etws.account.AccountListResponse;
 import com.etrade.etws.oauth.sdk.client.IOAuthClient;
 import com.etrade.etws.oauth.sdk.client.OAuthClientImpl;
@@ -21,18 +24,18 @@ import com.etrade.etws.sdk.common.ETWSException;
 
 public class Login {
 	// Variables
-	public IOAuthClient client = null;
-	public ClientRequest request = null;
-	public Token token = null;
-	public String oauth_consumer_key = null; // Your consumer key
-	public String oauth_consumer_secret = null; // Your consumer secret
-	public String oauth_request_token = null; // Request token
-	public String oauth_request_token_secret = null; // Request token secret
-	public String oauth_access_token = null; // Variable to store access token
-	public String oauth_access_token_secret = null; // Variable to store access
-	public String oauth_verify_code = null;
+	public static IOAuthClient client = null;
+	public static ClientRequest request = null;
+	public static Token token = null;
+	public static String oauth_consumer_key = null; // Your consumer key
+	public static String oauth_consumer_secret = null; // Your consumer secret
+	public static String oauth_request_token = null; // Request token
+	public static String oauth_request_token_secret = null; // Request token secret
+	public static String oauth_access_token = null; // Variable to store access token
+	public static String oauth_access_token_secret = null; // Variable to store access
+	public static String oauth_verify_code = null;
 
-	public void login() {
+	public static void login() {
 		getProps();
 		client = OAuthClientImpl.getInstance(); // Instantiate IOAUthClient
 		request = new ClientRequest(); // Instantiate ClientRequest
@@ -52,7 +55,7 @@ public class Login {
 		getAccessToken();
 	}
 
-	private String getVerficationCode() {
+	private static String getVerficationCode() {
 		String authorizeURL = null;
 		try {
 			authorizeURL = client.getAuthorizeUrl(request); // E*TRADE
@@ -71,7 +74,7 @@ public class Login {
 	}
 
 	// Should contain the Verification Code received from the authorization step
-	private void getAccessToken() {
+	private static void getAccessToken() {
 		request = new ClientRequest(); // Instantiate ClientRequest
 		request.setEnv(Environment.SANDBOX); // Use sandbox environment
 		// Prepare request
@@ -91,7 +94,7 @@ public class Login {
 		oauth_access_token_secret = token.getSecret(); // Access token secret
 	}
 
-	private void getProps() {
+	private static void getProps() {
 		Properties prop = new Properties();
 		try {
 			prop.load(new FileInputStream("local.properties"));
@@ -102,40 +105,23 @@ public class Login {
 		oauth_consumer_key=prop.getProperty("consumer_key");
 	}
 
-	public List<Account> getAccounts() {
-		request = getRequest(); // Instantiate ClientRequest
-		try {
-			AccountsClient account_client = new AccountsClient(request);
-			AccountListResponse response = account_client.getAccountList();
-			List<Account> alist = response.getResponse();
-			Iterator<Account> al = alist.iterator();
-			while (al.hasNext()) {
-				Account a = al.next();
 
-				System.out.println("===================");
-				System.out.println("Account: " + a.getAccountId());
-				System.out.println("===================");
-			}
-			return alist;
-		} catch (Exception e) {
-			Main.handleError(e);
-		}
-		return null;//can't get here - either we return from the try, or die in the catch
-	}
 	
-	public ClientRequest getRequest(){
-		if (oauth_access_token_secret==null){
+	public static ClientRequest getRequest(){
+		if (request==null){
 			System.out.println("Logging in.  You will have to enter the verification code");
 			login();
+			request = new ClientRequest(); // Instantiate ClientRequest
+			// Prepare request
+			request.setEnv(Environment.SANDBOX);
+			request.setConsumerKey(oauth_consumer_key);
+			request.setConsumerSecret(oauth_consumer_secret);
+			request.setToken(oauth_access_token);
+			request.setTokenSecret(oauth_access_token_secret);
+			return request;
 		}
-		request = new ClientRequest(); // Instantiate ClientRequest
-		// Prepare request
-		request.setEnv(Environment.SANDBOX);
-		request.setConsumerKey(oauth_consumer_key);
-		request.setConsumerSecret(oauth_consumer_secret);
-		request.setToken(oauth_access_token);
-		request.setTokenSecret(oauth_access_token_secret);
 		return request;
+		
 	}
 
 }
